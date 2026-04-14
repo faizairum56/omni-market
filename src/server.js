@@ -34,6 +34,10 @@ async function startServer() {
   const cartRepo           = new CartSnapshotRepository(db);
   const persistentOrderSvc = new PersistentOrderService(orderRepo);
 
+  // Auto-seed on first startup (skips if data already exists)
+  const { seed } = require('./db/seed');
+  await seed(db);
+
   seedTemplates(productRepo);
 
   const app = express();

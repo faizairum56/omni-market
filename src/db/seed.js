@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * seed.js — run once to populate test data
- * Usage: node src/db/seed.js
+ * seed.js
+ * Populates the database with starter data.
+ * Safe to call on every startup — skips if data already exists.
  */
 
 const { DatabaseAdapter }   = require('./DatabaseAdapter');
@@ -10,57 +11,66 @@ const { ProductRepository } = require('../repositories/ProductRepository');
 const { OrderRepository }   = require('../repositories/OrderRepository');
 const { UserRepository }    = require('../repositories/UserRepository');
 const { ProductFactory, OrderBuilder, RegisteredUser } = require('../patterns/omni-market');
+const bcrypt = require('bcryptjs');
 
-async function seed() {
-  await DatabaseAdapter.init();
-  const db = new DatabaseAdapter();
-  db.connect();
-
+async function seed(db) {
   const productRepo = new ProductRepository(db);
   const orderRepo   = new OrderRepository(db);
   const userRepo    = new UserRepository(db);
 
-  console.log('\n🌱  Seeding Omni-Market database...\n');
+  // ── Skip if already seeded ────────────────────────────────────
+  if (productRepo.count() > 0) {
+    console.log('  [Seed] Database already has data — skipping.');
+    return;
+  }
 
+  console.log('  [Seed] Seeding fresh database...');
+
+  // ── Products ──────────────────────────────────────────────────
   const products = [
     ProductFactory.createProduct('physical', 'Laptop Pro',           1200,  2.5),
     ProductFactory.createProduct('physical', 'OmniPhone X',           999,  0.18),
     ProductFactory.createProduct('physical', 'Wireless Mouse',         35,  0.2),
     ProductFactory.createProduct('physical', 'Mechanical Keyboard',    89,  0.9),
+    ProductFactory.createProduct('physical', 'USB-C Hub',              45,  0.15),
     ProductFactory.createProduct('digital',  'JS Design Patterns',   29.99, 'https://dl.omnimarket.io/jsdp'),
     ProductFactory.createProduct('digital',  'Node.js Masterclass',  49.99, 'https://dl.omnimarket.io/node'),
+    ProductFactory.createProduct('digital',  'Cloud Architecture',   79.99, 'https://dl.omnimarket.io/cloud'),
     ProductFactory.createProduct('service',  '24h Tech Support',     49.99, 24),
     ProductFactory.createProduct('service',  'Setup & Installation', 79.99,  2),
   ];
   productRepo.saveAll(products);
-  console.log(`  ✔  ${products.length} products seeded`);
+  console.log(`  [Seed] ✔ ${products.length} products`);
 
-  const users = [
-    new RegisteredUser('Bilal Ahmed', 250, 'superadmin', 'bilal@omni.pk'),
-    new RegisteredUser('Sara Khan',    40, 'admin',      'sara@omni.pk'),
-    new RegisteredUser('Ali Raza',    110, 'customer',   'ali@omni.pk'),
-  ];
-  users.forEach(u => userRepo.save(u));
-  console.log(`  ✔  ${users.length} users seeded`);
+  // ── Admin user (bcrypt hashed password) ───────────────────────
+  const adminHash = await bcrypt.hash('admin123', 12);
+  db.run(
+    `INSERT OR IGNORE INTO users (name, email, password_hash, role, loyalty_points, is_guest)
+     VALUES (?, ?, ?, ?, ?, 0)`,
+    ['Admin User', 'faizairum56@gmail.com', adminHash, 'superadmin', 500]
+  );
 
-  const [laptop, phone, mouse] = products;
-  const order = new OrderBuilder()
-    .addItem(laptop, 1).addItem(mouse, 2)
-    .addDiscount(50)
-    .setAddress('42 Quaid Ave, Islamabad, PK')
-    .setPaymentMethod('Credit Card')
-    .build();
-  order.status = 'placed';
-  orderRepo.save(order);
-  console.log(`  ✔  1 order seeded`);
+  // ── Regular demo user ─────────────────────────────────────────
+  const userHash = await bcrypt.hash('demo1234', 12);
+  db.run(
+    `INSERT OR IGNORE INTO users (name, email, password_hash, role, loyalty_points, is_guest)
+     VALUES (?, ?, ?, ?, ?, 0)`,
+    ['Demo User', 'demo@omnimarket.com', userHash, 'customer', 50]
+  );
+  console.log('  [Seed] ✔ 2 users (admin@omnimarket.com / admin123)');
 
-  console.log('\n📊  Summary:');
-  console.log(`     Products : ${productRepo.count()}`);
-  console.log(`     Users    : ${userRepo.count()}`);
-  console.log(`     Orders   : ${orderRepo.count()}`);
-
-  db.disconnect();
-  console.log('\n✅  Done.\n');
+  console.log('  [Seed] ✔ Done!');
 }
 
-seed().catch(e => { console.error(e); process.exit(1); });
+// ── Standalone mode: node src/db/seed.js ─────────────────────────
+if (require.main === module) {
+  (async () => {
+    await DatabaseAdapter.init();
+    const db = new DatabaseAdapter();
+    db.connect();
+    await seed(db);
+    db.disconnect();
+  })().catch(e => { console.error(e); process.exit(1); });
+}
+
+module.exports = { seed };
