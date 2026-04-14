@@ -468,7 +468,7 @@ function OrdersTab() {
                     <td style={S.td}><Badge label={o.status} color={color} /></td>
                     <td style={S.td}><strong style={{ color:'#38bdf8' }}>${Number(o.total).toFixed(2)}</strong></td>
                     <td style={S.td}>
-                      <div style={{ display:'flex', gap:4, flexWrap:'wrap', gap:4 }}>
+                      <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
                         {o.status === 'pending' && <button style={{ ...S.btn, ...S.primaryBtn, padding:'4px 10px', fontSize:12 }} onClick={() => updateStatus(o.id,'placed')}>Place</button>}
                         {o.status === 'placed'  && <button style={{ ...S.btn, ...S.warnBtn,   padding:'4px 10px', fontSize:12 }} onClick={() => updateStatus(o.id,'shipped')}>Ship</button>}
                         {o.status === 'shipped' && <button style={{ ...S.btn, ...S.successBtn,padding:'4px 10px', fontSize:12 }} onClick={() => updateStatus(o.id,'delivered')}>Deliver</button>}

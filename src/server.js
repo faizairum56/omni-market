@@ -55,15 +55,15 @@ async function startServer() {
   app.use(attachIdentity);
 
   // ── API routes ───────────────────────────────────────────────
-  app.use('/auth',     authRouter);
-  app.use('/products', productsRouter);
-  app.use('/orders',   ordersRouter);
-  app.use('/payment',  paymentRouter);
-  app.use('/shipping', shippingRouter);
-  app.use('/users',    usersRouter);
+  app.use('/api/auth',     authRouter);
+  app.use('/api/products', productsRouter);
+  app.use('/api/orders',   ordersRouter);
+  app.use('/api/payment',  paymentRouter);
+  app.use('/api/shipping', shippingRouter);
+  app.use('/api/users',    usersRouter);
 
   // Health / info endpoint
-  app.get('/health', (req, res) => res.json({
+  app.get('/api/health', (req, res) => res.json({
     name:'Omni-Market Global Engine', version:'4.0.0',
     patterns:23, status:'ok',
     integrations:{
